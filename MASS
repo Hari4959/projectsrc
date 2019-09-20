@@ -1,0 +1,262 @@
+#include<Wire.h>// for gy 521
+#include <LiquidCrystal.h>//for lcd screen
+long accelX, accelY, accelZ;
+float gForceX, gForceY, gForceZ;
+long gyroX, gyroY, gyroZ;
+float rotX, rotY, rotZ;
+double x;double y;double z;
+bool skid = false;
+bool
+col= false , hon=false;
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;// declaring pins for lcd unit
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);//initializing pins
+void setup()
+{
+pinMode(8,OUTPUT);
+pinMode(7,OUTPUT);
+pinMode(9,OUTPUT);
+lcd.begin(16, 2);//declaring rows and columns for lcd
+Serial.begin(9600);// begin serial communique
+Wire.begin();
+setupMPU();
+Serial.begin(9600);
+}
+void setupMPU()
+{
+Wire.beginTransmission(0b1101000); //This is the I2C address of the MPU
+(b1101000/b1101001
+for AC0 low/high datasheet sec. 9.2)
+Wire.write(0x6B); //Accessing the register 6B
+Power Management (Sec. 4.28)
+Wire.write(0b00000000); //Setting SLEEP register to 0. (Required; see Note on p. 9)
+Wire.endTransmission(true);
+Wire.beginT
+ransmission(0b1101000); //I2C address of the MPU
+Wire.write(0x1B); //Accessing the register 1B
+Gyroscope Configuration (Sec. 4.4)
+Wire.write(0x00000000); //Setting the gyro to full scale +/
+250deg./s
+Wire.endTransmission(true);
+Wire.beginTransmission(0b
+1101000); //I2C address of the MPU
+Wire.write(0x1C); //Accessing the register 1C
+Acccelerometer Configuration (Sec. 4.5)
+Wire.write(0b00011000); //Setting the accel to +/
+16g
+Wire.endTransmission(true);
+}
+void loop()
+{
+recordAccelRegisters();
+recordGyr
+oRegisters();
+printData();
+processSkid();
+processCollission();
+headON();
+processIntensity();
+delay(100);
+}
+void recordAccelRegisters() {
+Wire.beginTransmission(0b1101000); //I2C address of the MPU
+Wire.write(0x3B); //Starting register for Accel
+Wire.write(0x3B); //Starting register for Accel ReadingsReadings
+Wire.endTransmission();
+Wire.endTransmission();
+Wire.requestFrom(0b1101000,6); //Request Accel Registers (3B
+Wire.requestFrom(0b1101000,6); //Request Accel Registers (3B -- 40)40)
+while(Wire.available() < 6);
+while(Wire.available() < 6);
+accelX = Wire.read()<<8|Wire.read(); //Store first two bytes into accelX
+accelX = Wire.read()<<8|Wire.read(); //Store first two bytes into accelX
+accelY = Wire.read()<<8|Wire.read(); //Store middle t
+accelY = Wire.read()<<8|Wire.read(); //Store middle two bytes into accelYwo bytes into accelY
+accelZ = Wire.read()<<8|Wire.read(); //Store last two bytes into accelZ
+accelZ = Wire.read()<<8|Wire.read(); //Store last two bytes into accelZ
+processAccelData();
+processAccelData();
+}
+}
+void processAccelData()
+void processAccelData()
+{
+{
+gForceX = accelX / 2048.0;gForceX = accelX / 2048.0;
+gForceY = accelY / 2048.0;gForceY = accelY / 2048.0;
+gForceZ = accelZ / 2048.0;gForceZ = accelZ / 2048.0;
+}}
+void recordGyroRegvoid recordGyroRegisters()isters()
+{{
+Wire.beginTransmission(0b1101000);Wire.beginTransmission(0b1101000);
+//I2C address of the MPU//I2C address of the MPU
+Wire.write(0x43); //Starting register for Gyro ReadingsWire.write(0x43); //Starting register for Gyro Readings
+Wire.endTransmission();Wire.endTransmission();
+Wire.requestFrom(0b1101000,6); //Request Gyro Registers (43 Wire.requestFrom(0b1101000,6); //Request Gyro Registers (43 -- 48)48)
+while(Wirwhile(Wire.available() < 6);e.available() < 6);
+Wire.beginTransmission(0b1101000);Wire.beginTransmission(0b1101000);
+Wire.write(0x3B);Wire.write(0x3B);
+Wire.endTransmission(false);Wire.endTransmission(false);
+Wire.requestFrom(0b1101000,14,true);Wire.requestFrom(0b1101000,14,true);
+gyroX = Wire.read()<<8|Wire.read(); //Store first two bytes into accelXgyroX = Wire.read()<<8|Wire.read(); //Store first two bytes into accelX
+gyroY = gyroY = Wire.read()<<8|Wire.read(); //Store middle two bytes into accelYWire.read()<<8|Wire.read(); //Store middle two bytes into accelY
+gyroZ = Wire.read()<<8|Wire.read(); //Store last two bytes into accelZgyroZ = Wire.read()<<8|Wire.read(); //Store last two bytes into accelZ
+processGyroData();processGyroData();
+}}
+void processGyroData()void processGyroData()
+{{
+//int minVal=265; int maxVal=402;//int minVal=265; int maxVal=402;
+rotrotX =gyroX; X =gyroX;
+rotY= gyroY ;rotY= gyroY ;
+rotZ =gyroZ ;rotZ =gyroZ ;
+/*x= RAD_TO_DEG * (atan2(
+/*x= RAD_TO_DEG * (atan2(--rotY, rotY, --rotZ)+PI);rotZ)+PI);
+y= RAD_TO_DEG * (atan2(
+y= RAD_TO_DEG * (atan2(--rotX, rotX, --rotZ)+PI);rotZ)+PI);
+z= RAD_TO_DEG * (atan2(
+z= RAD_TO_DEG * (atan2(--rotY, rotY, --rotX)+PI);*/rotX)+PI);*/
+}}
+void printData() {void printData() {
+Serial.print("Gyro (deg)");
+Serial.print("Gyro (deg)");
+Serial.print(" X=");
+Serial.print(" X=");
+Serial.print(rotX);
+Serial.print(rotX);
+Serial.print(" Y=");
+Serial.print(" Y=");
+Serial.print(rotY);
+Serial.print(rotY);
+Serial.print(" Z=");
+Serial.print(" Z=");
+Serial.print(rotZ);
+Serial.print(rotZ);
+Serial.print(" Accel (g)");
+Serial.print(" Accel (g)");
+Serial.print(" X=");
+Serial.print(" X=");
+Serial.print(gForceX);
+Serial.print(gForceX);
+Serial.print(" Y=");
+Serial.print(" Y=");
+Serial.print
+Serial.print(gForceY);(gForceY);
+Serial.print(" Z=");
+Serial.print(" Z=");
+Serial.println(gForceZ);
+Serial.println(gForceZ);
+}
+}
+void processSkid()
+void processSkid()
+{
+{
+if(rotX>1000||rotX<if(rotX>1000||rotX<--1000)1000)
+{
+{
+skid=true;skid=true;
+digitalWrite(8,HIGH);digitalWrite(8,HIGH);
+delay(1000);delay(1000);
+digitalWrite(8,LOW);digitalWrite(8,LOW);
+}
+}
+elseelse
+{{
+skid=false;skid=false;
+digitalWrite(8,LOW);digitalWrite(8,LOW);
+}}
+}
+}
+void processCollission()
+void processCollission()
+{
+{
+if((gForceY<
+if((gForceY<--0.81)||((gForceX>0.70)||(gForceX<0.81)||((gForceX>0.70)||(gForceX<--0.70))) // average deceleration at colission with 0.70))) // average deceleration at colission with speed of 20kmph is 5.56 ,value 3 given for demonstration purpose also computes sideways collisionspeed of 20kmph is 5.56 ,value 3 given for demonstration purpose also computes sideways collision
+{
+{
+col=true;col=true;
+digitalWrite(7,HIGH);digitalWrite(7,HIGH);
+delay(1000);delay(1000);
+digitalWrite(7,LOW);digitalWrite(7,LOW);
+}
+}
+elseelse
+{{
+col=false;col=false;
+digitalWrite(7,LOW);digitalWrite(7,LOW);
+}}
+}
+}
+void headON()
+void headON()
+{
+{
+if((gForceY<if((gForceY<--0.81)&&((gForceX<1.8)||(gForceX>0.81)&&((gForceX<1.8)||(gForceX>--1.8)))1.8)))
+{{
+if(skid==false);if(skid==false);
+{{
+hon=true;hon=true;
+digitalWrite(9,HIGH);digitalWrite(9,HIGH);
+delay(500);delay(500);
+digitalWrite(9,LOW);digitalWrite(9,LOW);
+}}
+}}
+elseelse
+{{
+hon=false;hon=false;
+digitalWrite(9,LOW);digitalWrite(9,LOW);
+}}
+}
+}
+void processIntensity()
+void processIntensity()
+{
+{
+if(hon==true)if(hon==true)
+{{
+lcd.clear();lcd.clear();
+lcd.print("critical colls");lcd.print("critical colls");
+lcd.setCursor(0,1);lcd.setCursor(0,1);
+lcd.print("force ");lcd.print("force ");
+lcd.print(gForceY);lcd.print(gForceY);
+}}
+else if(skid==true&&col==false)else if(skid==true&&col==false)
+{{
+lcd.clear();lcd.clear();
+lcd.setCursor(0,0);lcd.setCursor(0,0);
+lcd.print(" skidding");lcd.print(" skidding");
+}}
+/*else /*else if(skid==false&&col==true)if(skid==false&&col==true)
+{{
+lcd.clear();lcd.clear();
+lcd.setCursor(0,0);lcd.setCursor(0,0);
+lcd.print(" colission");lcd.print(" colission");
+lcd.setCursor(0,1);lcd.setCursor(0,1);
+lcd.print("force ");lcd.print("force ");
+lcd.print(gForceY);lcd.print(gForceY);
+}*/}*/
+else if((col==true)&&(hon==false))else if((col==true)&&(hon==false))
+{{
+lcd.clear();lcd.clear();
+lcd.print(" collision");lcd.print(" collision");
+lcd.setlcd.setCursor(0,1);Cursor(0,1);
+lcd.print("side");lcd.print("side");
+if(gForceX<if(gForceX<--0.70)0.70)
+{{
+lcd.print(" left");lcd.print(" left");
+lcd.print(lcd.print(--gForceX);gForceX);
+}}
+else if(gForceX>0.70)else if(gForceX>0.70)
+{{
+lcd.print(" rigth ");lcd.print(" rigth ");
+lcd.print(gForceX);lcd.print(gForceX);
+}}
+}}
+elseelse
+{{
+lcd.clear();lcd.clear();
+lcd.setCursor(0,0);lcd.setCursor(0,0);
+lcd.print("All is good");lcd.print("All is good");
+}}
+}
+}
